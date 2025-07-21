@@ -1,0 +1,853 @@
+   // User authentication variables
+        let currentUser = null;
+        let users = JSON.parse(localStorage.getItem('quizUsers')) || [];
+        let scores = JSON.parse(localStorage.getItem('quizScores')) || {};
+
+        // Quiz variables
+        let quizQuestions = [];
+        let currentQuestionIndex = 0;
+        let selectedAnswers = new Array(40).fill(null);
+        let correctAnswers = 0;
+        let quizTimer;
+        let timeLeft = 1200; // 20 minutes in seconds
+
+        // DOM elements
+        const homeSection = document.getElementById('home-section');
+        const quizSection = document.getElementById('quiz-section');
+        const resultSection = document.getElementById('result-section');
+        const quizLoader = document.getElementById('quiz-loader');
+        const loginContainer = document.getElementById('login-container');
+        const registerContainer = document.getElementById('register-container');
+        const loginLink = document.getElementById('login-link');
+        const registerLink = document.getElementById('register-link');
+        const logoutLink = document.getElementById('logout-link');
+        const welcomeMessage = document.getElementById('welcome-message');
+        const userProfile = document.getElementById('user-profile');
+        const profileUsername = document.getElementById('profile-username');
+        const profileEmail = document.getElementById('profile-email');
+        const scoreList = document.getElementById('score-list');
+        const startQuizBtn = document.getElementById('start-quiz');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const explanation = document.getElementById('explanation');
+        const quizProgress = document.getElementById('quiz-progress');
+        const quizTimerElement = document.getElementById('quiz-timer');
+        const prevQuestionBtn = document.getElementById('prev-question');
+        const nextQuestionBtn = document.getElementById('next-question');
+        const submitQuizBtn = document.getElementById('submit-quiz');
+        const resultScore = document.getElementById('result-score');
+        const correctAnswersElement = document.getElementById('correct-answers');
+        const wrongAnswersElement = document.getElementById('wrong-answers');
+        const reviewQuizBtn = document.getElementById('review-quiz');
+        const tryAgainBtn = document.getElementById('try-again');
+        const homeButton = document.getElementById('home-button');
+
+        // Initialize the quiz questions
+        function initializeQuizQuestions() {
+            quizQuestions = [
+                {
+                    question: "What command is used to list files and directories in Linux?",
+                    options: ["ls", "dir", "list", "show"],
+                    correctAnswer: 0,
+                    explanation: "The 'ls' command is used to list files and directories in Linux."
+                },
+                {
+                    question: "Which command is used to change the current directory in Linux?",
+                    options: ["cd", "change", "chdir", "move"],
+                    correctAnswer: 0,
+                    explanation: "The 'cd' command changes the current working directory."
+                },
+                {
+                    question: "What does the 'pwd' command do?",
+                    options: [
+                        "Prints the working directory",
+                        "Prints system information",
+                        "Changes directory permissions",
+                        "Displays process information"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "The 'pwd' command prints the current working directory."
+                },
+                {
+                    question: "Which command is used to create a new directory?",
+                    options: ["mkdir", "makedir", "newdir", "createdir"],
+                    correctAnswer: 0,
+                    explanation: "The 'mkdir' command creates a new directory."
+                },
+                {
+                    question: "What command is used to display manual pages for other commands?",
+                    options: ["man", "help", "info", "doc"],
+                    correctAnswer: 0,
+                    explanation: "The 'man' command displays manual pages ('man pages') for other commands."
+                },
+                {
+                    question: "Which command is used to remove files in Linux?",
+                    options: ["rm", "delete", "erase", "remove"],
+                    correctAnswer: 0,
+                    explanation: "The 'rm' command is used to remove files."
+                },
+                {
+                    question: "What does the 'cp' command do?",
+                    options: [
+                        "Copies files and directories",
+                        "Compares files",
+                        "Compresses files",
+                        "Changes permissions"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "The 'cp' command copies files and directories."
+                },
+                {
+                    question: "Which command is used to move or rename files?",
+                    options: ["mv", "rename", "mov", "change"],
+                    correctAnswer: 0,
+                    explanation: "The 'mv' command moves or renames files."
+                },
+                {
+                    question: "What does the 'chmod' command do?",
+                    options: [
+                        "Changes file permissions",
+                        "Changes file ownership",
+                        "Changes directory structure",
+                        "Changes system configuration"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "The 'chmod' command changes file permissions."
+                },
+                {
+                    question: "Which command displays the contents of a file?",
+                    options: ["cat", "display", "show", "print"],
+                    correctAnswer: 0,
+                    explanation: "The 'cat' command displays the contents of a file."
+                },
+                {
+                    question: "What does the 'grep' command do?",
+                    options: [
+                        "Searches for patterns in files",
+                        "Groups files by type",
+                        "Graphs system performance",
+                        "Generates reports"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "The 'grep' command searches for patterns in files."
+                },
+                {
+                    question: "Which command is used to find files and directories?",
+                    options: ["find", "locate", "search", "look"],
+                    correctAnswer: 0,
+                    explanation: "The 'find' command searches for files and directories."
+                },
+                {
+                    question: "What does the 'ps' command do?",
+                    options: [
+                        "Displays running processes",
+                        "Prints system status",
+                        "Changes process priority",
+                        "Starts a new process"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "The 'ps' command displays information about active processes."
+                },
+                {
+                    question: "Which command is used to terminate processes?",
+                    options: ["kill", "stop", "end", "terminate"],
+                    correctAnswer: 0,
+                    explanation: "The 'kill' command sends signals to processes to terminate them."
+                },
+                {
+                    question: "What does the 'df' command show?",
+                    options: [
+                        "Disk space usage",
+                        "Directory structure",
+                        "File sizes",
+                        "System uptime"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "The 'df' command displays disk space usage."
+                },
+                {
+                    question: "Which command displays memory usage?",
+                    options: ["free", "mem", "memory", "meminfo"],
+                    correctAnswer: 0,
+                    explanation: "The 'free' command displays memory usage information."
+                },
+                {
+                    question: "What is the purpose of the 'tar' command?",
+                    options: [
+                        "Archives files",
+                        "Lists directory contents",
+                        "Edits text files",
+                        "Manages disk partitions"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "The 'tar' command is used to create and manipulate archive files."
+                },
+                {
+                    question: "Which command compresses files with gzip compression?",
+                    options: ["gzip", "zip", "compress", "squeeze"],
+                    correctAnswer: 0,
+                    explanation: "The 'gzip' command compresses files using gzip compression."
+                },
+                {
+                    question: "What does the 'ssh' command do?",
+                    options: [
+                        "Connects to remote systems securely",
+                        "Shares files between systems",
+                        "Synchronizes system time",
+                        "Scans system hardware"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "The 'ssh' command provides secure remote login and other network services."
+                },
+                {
+                    question: "Which command updates package lists on Debian-based systems?",
+                    options: ["apt-get update", "apt update", "apt-get refresh", "apt refresh"],
+                    correctAnswer: 0,
+                    explanation: "The 'apt-get update' command updates the package lists on Debian-based systems."
+                },
+                {
+                    question: "What does the 'ifconfig' command do?",
+                    options: [
+                        "Displays network interface configuration",
+                        "Configures firewall rules",
+                        "Manages IP routing tables",
+                        "Tests network connectivity"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "The 'ifconfig' command displays and configures network interfaces."
+                },
+                {
+                    question: "Which command is used to test network connectivity?",
+                    options: ["ping", "connect", "net", "test"],
+                    correctAnswer: 0,
+                    explanation: "The 'ping' command tests network connectivity between hosts."
+                },
+                {
+                    question: "What does the 'top' command display?",
+                    options: [
+                        "System process information",
+                        "Disk usage statistics",
+                        "Network connections",
+                        "Memory allocation details"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "The 'top' command displays system process information and resource usage."
+                },
+                {
+                    question: "Which command changes file ownership?",
+                    options: ["chown", "own", "changeown", "setowner"],
+                    correctAnswer: 0,
+                    explanation: "The 'chown' command changes file ownership."
+                },
+                {
+                    question: "What is the purpose of the 'wget' command?",
+                    options: [
+                        "Downloads files from the web",
+                        "Displays web pages",
+                        "Writes files",
+                        "Counts words in a file"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "The 'wget' command downloads files from the web."
+                },
+                {
+                    question: "Which command displays current date and time?",
+                    options: ["date", "time", "now", "datetime"],
+                    correctAnswer: 0,
+                    explanation: "The 'date' command displays the current date and time."
+                },
+                {
+                    question: "What does the 'uname' command do?",
+                    options: [
+                        "Displays system information",
+                        "Lists all users",
+                        "Creates unique filenames",
+                        "Changes usernames"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "The 'uname' command displays basic system information."
+                },
+                {
+                    question: "Which command is used to view the end of a file?",
+                    options: ["tail", "end", "last", "rear"],
+                    correctAnswer: 0,
+                    explanation: "The 'tail' command displays the last part of files."
+                },
+                {
+                    question: "What is the purpose of the 'history' command?",
+                    options: [
+                        "Shows command history",
+                        "Displays system history",
+                        "Records system events",
+                        "Shows user login history"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "The 'history' command displays the command history for the current user."
+                },
+                {
+                    question: "Which command clears the terminal screen?",
+                    options: ["clear", "cls", "clean", "reset"],
+                    correctAnswer: 0,
+                    explanation: "The 'clear' command clears the terminal screen."
+                },
+                {
+                    question: "What does the 'sort' command do?",
+                    options: [
+                        "Sorts lines of text files",
+                        "Organizes files by date",
+                        "Lists files in sorted order",
+                        "Searches sorted data"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "The 'sort' command sorts lines of text files."
+                },
+                {
+                    question: "Which command counts lines, words, and characters in a file?",
+                    options: ["wc", "count", "lnum", "sum"],
+                    correctAnswer: 0,
+                    explanation: "The 'wc' command counts lines, words, and characters in files."
+                },
+                {
+                    question: "What is the purpose of the 'diff' command?",
+                    options: [
+                        "Compares files line by line",
+                        "Displays file differences",
+                        "Shows disk differences",
+                        "Differentiates commands"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "The 'diff' command compares files line by line."
+                },
+                {
+                    question: "Which command displays a calendar?",
+                    options: ["cal", "calendar", "datecal", "showcal"],
+                    correctAnswer: 0,
+                    explanation: "The 'cal' command displays a calendar."
+                },
+                {
+                    question: "What does the 'ln' command do?",
+                    options: [
+                        "Creates file links",
+                        "Lists files numerically",
+                        "Creates numbered lists",
+                        "Links network connections"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "The 'ln' command creates links between files."
+                },
+                {
+                    question: "Which command displays information about commands?",
+                    options: ["which", "what", "info", "command"],
+                    correctAnswer: 0,
+                    explanation: "The 'which' command displays information about commands."
+                },
+                {
+                    question: "What is the purpose of the 'alias' command?",
+                    options: [
+                        "Creates command shortcuts",
+                        "Lists all aliases",
+                        "Changes command names",
+                        "Allocates system aliases"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "The 'alias' command creates shortcuts for other commands."
+                },
+                {
+                    question: "Which command shows the current user?",
+                    options: ["whoami", "who", "user", "me"],
+                    correctAnswer: 0,
+                    explanation: "The 'whoami' command prints the current user's username."
+                },
+                {
+                    question: "What does the 'passwd' command do?",
+                    options: [
+                        "Changes user password",
+                        "Displays passwords",
+                        "Stores passwords",
+                        "Generates passwords"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "The 'passwd' command changes user passwords."
+                },
+                {
+                    question: "Which command displays disk usage by directory?",
+                    options: ["du", "diskuse", "usage", "dspace"],
+                    correctAnswer: 0,
+                    explanation: "The 'du' command estimates disk usage by directory."
+                },
+                {
+                    question: "What is the purpose of the 'echo' command?",
+                    options: [
+                        "Displays text on the screen",
+                        "Repeats commands",
+                        "Echoes keyboard input",
+                        "Creates sound output"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "The 'echo' command displays text on the screen."
+                },
+                {
+                    question: "Which command lists logged-in users?",
+                    options: ["who", "users", "loggedin", "sessions"],
+                    correctAnswer: 0,
+                    explanation: "The 'who' command lists all logged-in users."
+                }
+            ];
+        }
+
+        // Initialize the application
+        function initApp() {
+            initializeQuizQuestions();
+            checkLoggedInUser();
+            setupEventListeners();
+        }
+
+        // Check if user is logged in
+        function checkLoggedInUser() {
+            const loggedInUser = localStorage.getItem('quizCurrentUser');
+            if (loggedInUser) {
+                currentUser = JSON.parse(loggedInUser);
+                updateUIForLoggedInUser();
+            }
+        }
+
+        // Update UI when user is logged in
+        function updateUIForLoggedInUser() {
+            loginLink.style.display = 'none';
+            registerLink.style.display = 'none';
+            logoutLink.style.display = 'block';
+            welcomeMessage.style.display = 'inline';
+            welcomeMessage.textContent = `Welcome, ${currentUser.username}`;
+            userProfile.style.display = 'block';
+            profileUsername.textContent = `Username: ${currentUser.username}`;
+            profileEmail.textContent = `Email: ${currentUser.email}`;
+            updateScoreList();
+        }
+
+        // Update UI when user logs out
+        function updateUIForLoggedOutUser() {
+            loginLink.style.display = 'block';
+            registerLink.style.display = 'block';
+            logoutLink.style.display = 'none';
+            welcomeMessage.style.display = 'none';
+            userProfile.style.display = 'none';
+        }
+
+        // Update the score list in user profile
+        function updateScoreList() {
+            if (!currentUser) return;
+            
+            scoreList.innerHTML = '';
+            const userScores = scores[currentUser.username] || [];
+            
+            if (userScores.length === 0) {
+                const li = document.createElement('li');
+                li.textContent = 'No quiz attempts yet';
+                scoreList.appendChild(li);
+                return;
+            }
+            
+            userScores.forEach((score, index) => {
+                const li = document.createElement('li');
+                li.textContent = `Attempt ${index + 1}: ${score.score}% (${score.correct}/${score.total}) - ${new Date(score.date).toLocaleString()}`;
+                scoreList.appendChild(li);
+            });
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Auth related
+            loginLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                loginContainer.style.display = 'flex';
+            });
+            
+            registerLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                registerContainer.style.display = 'flex';
+            });
+            
+            logoutLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                logoutUser();
+            });
+            
+            document.getElementById('login-cancel').addEventListener('click', () => {
+                loginContainer.style.display = 'none';
+            });
+            
+            document.getElementById('register-cancel').addEventListener('click', () => {
+                registerContainer.style.display = 'none';
+            });
+            
+            document.getElementById('login-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                loginUser();
+            });
+            
+            document.getElementById('register-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                registerUser();
+            });
+            
+            // Quiz related
+            startQuizBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                startQuiz();
+            });
+            
+            prevQuestionBtn.addEventListener('click', () => {
+                navigateQuestion(-1);
+            });
+            
+            nextQuestionBtn.addEventListener('click', () => {
+                navigateQuestion(1);
+            });
+            
+            submitQuizBtn.addEventListener('click', () => {
+                submitQuiz();
+            });
+            
+            reviewQuizBtn.addEventListener('click', () => {
+                reviewQuiz();
+            });
+            
+            tryAgainBtn.addEventListener('click', () => {
+                tryAgain();
+            });
+            
+            homeButton.addEventListener('click', () => {
+                showHome();
+            });
+        }
+
+        // User login function
+        function loginUser() {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            
+            const user = users.find(u => u.username === username && u.password === password);
+            
+            if (user) {
+                currentUser = user;
+                localStorage.setItem('quizCurrentUser', JSON.stringify(currentUser));
+                loginContainer.style.display = 'none';
+                updateUIForLoggedInUser();
+                
+                // Clear login form
+                document.getElementById('login-form').reset();
+            } else {
+                alert('Invalid username or password');
+            }
+        }
+
+        // User registration function
+        function registerUser() {
+            const username = document.getElementById('register-username').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            
+            // Simple validation
+            if (!username || !email || !password) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            // Check if username exists
+            const usernameExists = users.some(u => u.username === username);
+            if (usernameExists) {
+                alert('Username already exists');
+                return;
+            }
+            
+            // Create new user
+            const newUser = {
+                username,
+                email,
+                password
+            };
+            
+            users.push(newUser);
+            localStorage.setItem('quizUsers', JSON.stringify(users));
+            
+            // Login the new user
+            currentUser = newUser;
+            localStorage.setItem('quizCurrentUser', JSON.stringify(currentUser));
+            registerContainer.style.display = 'none';
+            updateUIForLoggedInUser();
+            
+            // Clear registration form
+            document.getElementById('register-form').reset();
+        }
+
+        // User logout function
+        function logoutUser() {
+            currentUser = null;
+            localStorage.removeItem('quizCurrentUser');
+            updateUIForLoggedOutUser();
+        }
+
+        // Start quiz function
+        function startQuiz() {
+            homeSection.style.display = 'none';
+            quizLoader.style.display = 'block';
+            
+            // Simulate loading time
+            setTimeout(() => {
+                quizLoader.style.display = 'none';
+                quizSection.style.display = 'block';
+                startTimer();
+                displayQuestion(0);
+            }, 1000);
+        }
+
+        // Start quiz timer
+        function startTimer() {
+            updateTimerDisplay();
+            quizTimer = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                
+                if (timeLeft <= 0) {
+                    clearInterval(quizTimer);
+                    submitQuiz();
+                }
+            }, 1000);
+        }
+
+        // Update timer display
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            quizTimerElement.textContent = `Time left: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // Display question
+        function displayQuestion(index) {
+            if (index < 0 || index >= quizQuestions.length) return;
+            
+            currentQuestionIndex = index;
+            const question = quizQuestions[index];
+            
+            // Update question text
+            questionText.textContent = question.question;
+            
+            // Update options
+            optionsContainer.innerHTML = '';
+            question.options.forEach((option, i) => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'option';
+                if (selectedAnswers[index] === i) {
+                    optionElement.classList.add('selected');
+                }
+                optionElement.textContent = option;
+                optionElement.dataset.index = i;
+                optionElement.addEventListener('click', () => selectOption(i));
+                optionsContainer.appendChild(optionElement);
+            });
+            
+            // Update explanation (hidden by default)
+            explanation.textContent = question.explanation;
+            explanation.style.display = 'none';
+            
+            // Update progress
+            quizProgress.textContent = `Question ${index + 1} of ${quizQuestions.length}`;
+            
+            // Update navigation buttons
+            prevQuestionBtn.disabled = index === 0;
+            
+            if (index === quizQuestions.length - 1) {
+                nextQuestionBtn.style.display = 'none';
+                submitQuizBtn.style.display = 'block';
+            } else {
+                nextQuestionBtn.style.display = 'block';
+                submitQuizBtn.style.display = 'none';
+            }
+        }
+
+        // Select option
+        function selectOption(optionIndex) {
+            // Clear previous selection
+            const options = document.querySelectorAll('.option');
+            options.forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // Select clicked option
+            options[optionIndex].classList.add('selected');
+            selectedAnswers[currentQuestionIndex] = optionIndex;
+        }
+
+        // Navigate between questions
+        function navigateQuestion(direction) {
+            const newIndex = currentQuestionIndex + direction;
+            if (newIndex >= 0 && newIndex < quizQuestions.length) {
+                displayQuestion(newIndex);
+            }
+        }
+
+        // Submit quiz
+        function submitQuiz() {
+            clearInterval(quizTimer);
+            
+            // Calculate score
+            correctAnswers = 0;
+            quizQuestions.forEach((question, index) => {
+                if (selectedAnswers[index] === question.correctAnswer) {
+                    correctAnswers++;
+                }
+            });
+            
+            // Show results
+            displayResults();
+            
+            // Save score if user is logged in
+            if (currentUser) {
+                saveScore();
+            }
+        }
+
+        // Display results
+        function displayResults() {
+            quizSection.style.display = 'none';
+            resultSection.style.display = 'block';
+            
+            const percentage = Math.round((correctAnswers / quizQuestions.length) * 100);
+            const wrongAnswers = quizQuestions.length - correctAnswers;
+            
+            resultScore.textContent = `${percentage}%`;
+            correctAnswersElement.textContent = correctAnswers;
+            wrongAnswersElement.textContent = wrongAnswers;
+        }
+
+        // Save score
+        function saveScore() {
+            if (!currentUser) return;
+            
+            const percentage = Math.round((correctAnswers / quizQuestions.length) * 100);
+            const userScore = {
+                username: currentUser.username,
+                score: percentage,
+                correct: correctAnswers,
+                total: quizQuestions.length,
+                date: new Date().toISOString()
+            };
+            
+            if (!scores[currentUser.username]) {
+                scores[currentUser.username] = [];
+            }
+            
+            scores[currentUser.username].push(userScore);
+            localStorage.setItem('quizScores', JSON.stringify(scores));
+            
+            // Update score list
+            updateScoreList();
+        }
+
+        // Review quiz
+        function reviewQuiz() {
+            resultSection.style.display = 'none';
+            quizSection.style.display = 'block';
+            
+            // Display first question with answers shown
+            displayQuestionWithAnswers(0);
+        }
+
+        // Display question with answers
+        function displayQuestionWithAnswers(index) {
+            if (index < 0 || index >= quizQuestions.length) return;
+            
+            currentQuestionIndex = index;
+            const question = quizQuestions[index];
+            
+            // Update question text
+            questionText.textContent = question.question;
+            
+            // Update options
+            optionsContainer.innerHTML = '';
+            question.options.forEach((option, i) => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'option';
+                
+                if (selectedAnswers[index] === i && selectedAnswers[index] === question.correctAnswer) {
+                    optionElement.classList.add('correct');
+                } else if (selectedAnswers[index] === i && selectedAnswers[index] !== question.correctAnswer) {
+                    optionElement.classList.add('incorrect');
+                } else if (i === question.correctAnswer) {
+                    optionElement.classList.add('correct');
+                }
+                
+                optionElement.textContent = option;
+                optionsContainer.appendChild(optionElement);
+            });
+            
+            // Update explanation
+            explanation.textContent = question.explanation;
+            explanation.style.display = 'block';
+            
+            // Update progress
+            quizProgress.textContent = `Question ${index + 1} of ${quizQuestions.length}`;
+            
+            // Update navigation buttons for review
+            prevQuestionBtn.disabled = index === 0;
+            prevQuestionBtn.textContent = 'Previous';
+            
+            if (index === quizQuestions.length - 1) {
+                nextQuestionBtn.style.display = 'none';
+                submitQuizBtn.style.display = 'none';
+                prevQuestionBtn.textContent = 'Back to Results';
+            } else {
+                nextQuestionBtn.style.display = 'block';
+                nextQuestionBtn.textContent = 'Next';
+                submitQuizBtn.style.display = 'none';
+            }
+            
+            // Special handling for "Back to Results" button
+            if (index === quizQuestions.length - 1) {
+                prevQuestionBtn.onclick = () => {
+                    quizSection.style.display = 'none';
+                    resultSection.style.display = 'block';
+                };
+            } else {
+                prevQuestionBtn.onclick = () => {
+                    navigateQuestionInReview(-1);
+                };
+            }
+            
+            nextQuestionBtn.onclick = () => {
+                navigateQuestionInReview(1);
+            };
+        }
+
+        // Navigate in review mode
+        function navigateQuestionInReview(direction) {
+            const newIndex = currentQuestionIndex + direction;
+            if (newIndex >= 0 && newIndex < quizQuestions.length) {
+                displayQuestionWithAnswers(newIndex);
+            }
+        }
+
+        // Try again function
+        function tryAgain() {
+            // Reset quiz variables
+            selectedAnswers = new Array(40).fill(null);
+            timeLeft = 1200;
+            
+            // Show quiz again
+            resultSection.style.display = 'none';
+            quizSection.style.display = 'block';
+            
+            // Reset timer and start quiz
+            startTimer();
+            displayQuestion(0);
+        }
+
+        // Show home function
+        function showHome() {
+            quizSection.style.display = 'none';
+            resultSection.style.display = 'none';
+            homeSection.style.display = 'block';
+        }
+
+        // Initialize the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initApp);
